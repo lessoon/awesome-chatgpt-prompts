@@ -5,10 +5,12 @@ import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { analyticsAuth } from "@/lib/analytics";
 
 interface OAuthButtonProps {
   provider: string;
   providerName: string;
+  iconUrl?: string;
 }
 
 const providerIcons: Record<string, React.ReactNode> = {
@@ -30,14 +32,21 @@ const providerIcons: Record<string, React.ReactNode> = {
       <path d="M5.483 21.3H24L14.025 4.013l-3.038 8.347 5.836 6.938L5.483 21.3zM13.23 2.7L6.105 8.677 0 19.253h5.505l7.725-16.553z"/>
     </svg>
   ),
+  apple: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+    </svg>
+  ),
 };
 
-export function OAuthButton({ provider, providerName }: OAuthButtonProps) {
+export function OAuthButton({ provider, providerName, iconUrl }: OAuthButtonProps) {
   const t = useTranslations("auth");
   const [isLoading, setIsLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handleSignIn = async () => {
     setIsLoading(true);
+    analyticsAuth.oauthStart(provider);
     try {
       await signIn(provider, { callbackUrl: "/" });
     } catch (error) {
@@ -56,8 +65,15 @@ export function OAuthButton({ provider, providerName }: OAuthButtonProps) {
     >
       {isLoading ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
+      ) : iconUrl && !imgError ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={iconUrl} alt={providerName} className="mr-2 h-4 w-4 object-contain" onError={() => setImgError(true)} />
+      ) : providerIcons[provider] ? (
         <span className="mr-2">{providerIcons[provider]}</span>
+      ) : (
+        <span className="mr-2 flex h-4 w-4 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-primary">
+          {providerName.charAt(0).toUpperCase()}
+        </span>
       )}
       {t("signInWith", { provider: providerName })}
     </Button>

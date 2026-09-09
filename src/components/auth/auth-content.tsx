@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
 import { OAuthButton } from "./oauth-button";
@@ -7,18 +8,24 @@ import { OAuthButton } from "./oauth-button";
 interface AuthContentProps {
   providers: string[];
   mode: "login" | "register";
+  useCloneBranding?: boolean;
+  providerDisplayNames?: Record<string, string>;
+  providerLogos?: Record<string, string>;
 }
 
 const providerNames: Record<string, string> = {
   github: "GitHub",
   google: "Google",
   azure: "Microsoft",
+  apple: "Apple",
   credentials: "Email",
 };
 
-export function AuthContent({ providers, mode }: AuthContentProps) {
+export function AuthContent({ providers, mode, useCloneBranding = false, providerDisplayNames, providerLogos }: AuthContentProps) {
+  const t = useTranslations("auth");
   const hasCredentials = providers.includes("credentials");
   const oauthProviders = providers.filter((p) => p !== "credentials");
+  const hasGitHub = oauthProviders.includes("github");
 
   return (
     <div className="space-y-3">
@@ -29,9 +36,15 @@ export function AuthContent({ providers, mode }: AuthContentProps) {
             <OAuthButton
               key={provider}
               provider={provider}
-              providerName={providerNames[provider] || provider}
+              providerName={providerDisplayNames?.[provider] || providerNames[provider] || provider}
+              iconUrl={providerLogos?.[provider]}
             />
           ))}
+          {hasGitHub && !useCloneBranding && (
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              {t("githubAttributionHint")}
+            </p>
+          )}
         </div>
       )}
 

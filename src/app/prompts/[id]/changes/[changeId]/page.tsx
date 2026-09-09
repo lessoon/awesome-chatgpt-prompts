@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DiffView } from "@/components/ui/diff-view";
+import { SkillDiffViewer } from "@/components/prompts/skill-diff-viewer";
 import { ChangeRequestActions } from "@/components/prompts/change-request-actions";
 import { ReopenChangeRequestButton } from "@/components/prompts/reopen-change-request-button";
 import { DismissChangeRequestButton } from "@/components/prompts/dismiss-change-request-button";
@@ -17,11 +18,23 @@ interface ChangeRequestPageProps {
   params: Promise<{ id: string; changeId: string }>;
 }
 
+/**
+ * Extracts the prompt ID from a URL parameter that may contain a slug
+ */
+function extractPromptId(idParam: string): string {
+  const underscoreIndex = idParam.indexOf("_");
+  if (underscoreIndex !== -1) {
+    return idParam.substring(0, underscoreIndex);
+  }
+  return idParam;
+}
+
 export default async function ChangeRequestPage({ params }: ChangeRequestPageProps) {
   const session = await auth();
   const t = await getTranslations("changeRequests");
   const locale = await getLocale();
-  const { id: promptId, changeId } = await params;
+  const { id: idParam, changeId } = await params;
+  const promptId = extractPromptId(idParam);
 
   const changeRequest = await db.changeRequest.findUnique({
     where: { id: changeId },
@@ -40,6 +53,7 @@ export default async function ChangeRequestPage({ params }: ChangeRequestPagePro
           title: true,
           content: true,
           authorId: true,
+          type: true,
         },
       },
     },
@@ -139,10 +153,17 @@ export default async function ChangeRequestPage({ params }: ChangeRequestPagePro
       {/* Content diff */}
       <div className="mb-6">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{t("contentChanges")}</p>
-        <DiffView
-          original={changeRequest.originalContent}
-          modified={changeRequest.proposedContent}
-        />
+        {changeRequest.prompt.type === "SKILL" ? (
+          <SkillDiffViewer
+            original={changeRequest.originalContent}
+            modified={changeRequest.proposedContent}
+          />
+        ) : (
+          <DiffView
+            original={changeRequest.originalContent}
+            modified={changeRequest.proposedContent}
+          />
+        )}
       </div>
 
       {/* Review note (if exists) */}

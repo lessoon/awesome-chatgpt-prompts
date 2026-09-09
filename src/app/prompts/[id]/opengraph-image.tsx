@@ -8,6 +8,7 @@ export const size = {
   height: 630,
 };
 export const contentType = "image/png";
+export const revalidate = 3600;
 
 const typeLabels: Record<string, string> = {
   TEXT: "Text Prompt",
@@ -32,8 +33,20 @@ const radiusMap: Record<string, number> = {
   lg: 16,
 };
 
+/**
+ * Extracts the prompt ID from a URL parameter that may contain a slug
+ */
+function extractPromptId(idParam: string): string {
+  const underscoreIndex = idParam.indexOf("_");
+  if (underscoreIndex !== -1) {
+    return idParam.substring(0, underscoreIndex);
+  }
+  return idParam;
+}
+
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idParam } = await params;
+  const id = extractPromptId(idParam);
   const config = await getConfig();
   const radius = radiusMap[config.theme?.radius || "sm"] || 8;
   const radiusLg = radius * 2; // For larger elements like content box
